@@ -1,0 +1,706 @@
+@import url("https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=Manrope:wght@500;600;700&display=swap");
+
+
+/* =========================
+   DESIGN SYSTEM
+========================= */
+
+:root {
+  --plum: #352238;
+  --muted-plum: #684b67;
+
+  --sage: #7d9d8c;
+  --soft-sage: #dde8e1;
+
+  --ivory: #f7f4ee;
+  --white: #fffdf9;
+
+  --charcoal: #272329;
+  --muted-text: #716b70;
+
+  --border: rgba(53, 34, 56, 0.13);
+}
+
+
+/* =========================
+   PAGE
+========================= */
+
+.landing-page {
+  min-height: 100vh;
+  background: var(--ivory);
+  color: var(--charcoal);
+  font-family: "DM Sans", sans-serif;
+}
+
+
+/* =========================
+   NAVBAR
+========================= */
+
+.navbar {
+  height: 82px;
+
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  padding: 0 7%;
+
+  background: rgba(247, 244, 238, 0.92);
+  border-bottom: 1px solid var(--border);
+
+  position: sticky;
+  top: 0;
+  z-index: 100;
+
+  backdrop-filter: blur(12px);
+}
+
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+
+  text-decoration: none;
+
+  color: var(--plum);
+
+  font-family: "Manrope", sans-serif;
+  font-size: 19px;
+  font-weight: 700;
+}
+
+
+.brand-mark {
+  width: 35px;
+  height: 35px;
+
+  display: grid;
+  place-items: center;
+
+  border-radius: 10px;
+
+  background: var(--plum);
+  color: var(--ivory);
+
+  font-size: 16px;
+}
+
+
+.nav-links {
+  display: flex;
+  gap: 34px;
+}
+
+
+.nav-links a,
+.faculty-link {
+  text-decoration: none;
+
+  color: var(--charcoal);
+
+  font-size: 14px;
+  font-weight: 500;
+
+  transition: color 0.2s ease;
+}
+
+
+.nav-links a:hover,
+.faculty-link:hover {
+  color: var(--muted-plum);
+}
+
+
+.nav-actions {
+  display: flex;
+  align-items: center;
+  gap: 22px;
+}
+
+
+.student-login {
+  padding: 11px 19px;
+
+  border-radius: 9px;
+
+  background: var(--plum);
+  color: white;
+
+  text-decoration: none;
+
+  font-size: 14px;
+  font-weight: 600;
+
+  transition:
+    transform 0.2s ease,
+    background 0.2s ease;
+}
+
+
+.student-login:hover {
+  background: var(--muted-plum);
+  transform: translateY(-1px);
+}
+
+
+/* =========================
+   HERO
+========================= */
+
+.hero {
+  min-height: 660px;
+
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+
+  padding: 100px 20px 120px;
+
+  text-align: center;
+}
+
+
+.hero-label {
+  padding: 8px 14px;
+
+  border: 1px solid rgba(125, 157, 140, 0.5);
+  border-radius: 30px;
+
+  background: var(--soft-sage);
+
+  color: #496455;
+
+  font-size: 13px;
+  font-weight: 600;
+
+  margin-bottom: 30px;
+}
+
+
+.hero h1 {
+  max-width: 920px;
+
+  margin: 0;
+
+  color: var(--plum);
+
+  font-family: "Manrope", sans-serif;
+
+  font-size: clamp(48px, 6vw, 78px);
+  font-weight: 600;
+
+  line-height: 1.08;
+  letter-spacing: -3px;
+}
+
+.hero h1 span {
+  display: block;
+  color: var(--plum);
+  margin-top: 6px;
+}
+
+
+.hero-description {
+  max-width: 660px;
+
+  margin: 28px auto 0;
+
+  color: var(--muted-text);
+
+  font-size: 18px;
+  line-height: 1.75;
+}
+
+
+.hero-actions {
+  display: flex;
+  align-items: center;
+  gap: 28px;
+
+  margin-top: 38px;
+}
+
+
+.primary-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 18px;
+
+  padding: 14px 21px;
+
+  border-radius: 10px;
+
+  background: var(--plum);
+  color: white;
+
+  text-decoration: none;
+
+  font-size: 14px;
+  font-weight: 600;
+
+  transition:
+    background 0.2s ease,
+    transform 0.2s ease;
+}
+
+
+.primary-button:hover {
+  background: var(--muted-plum);
+  transform: translateY(-2px);
+}
+
+
+.primary-button span {
+  font-size: 18px;
+}
+
+
+.text-button {
+  color: var(--plum);
+
+  text-decoration: none;
+
+  font-size: 14px;
+  font-weight: 600;
+
+  border-bottom: 1px solid var(--plum);
+
+  padding-bottom: 3px;
+}
+
+
+.hero-note {
+  margin-top: 60px;
+
+  color: #948d91;
+
+  font-size: 12px;
+  letter-spacing: 0.5px;
+}
+
+
+/* =========================
+   COMMON SECTION TEXT
+========================= */
+
+.section-label {
+  margin-bottom: 20px;
+
+  color: var(--sage);
+
+  font-size: 11px;
+  font-weight: 700;
+
+  letter-spacing: 2px;
+}
+
+
+/* =========================
+   ABOUT
+========================= */
+
+.about-section {
+  padding: 120px 20px;
+
+  background: var(--white);
+
+  text-align: center;
+}
+
+
+.about-section h2 {
+  max-width: 780px;
+
+  margin: auto;
+
+  color: var(--plum);
+
+  font-family: "Manrope", sans-serif;
+
+  font-size: clamp(34px, 4vw, 50px);
+  font-weight: 600;
+
+  line-height: 1.25;
+  letter-spacing: -1.5px;
+}
+
+
+.section-description {
+  max-width: 650px;
+
+  margin: 28px auto 0;
+
+  color: var(--muted-text);
+
+  font-size: 17px;
+  line-height: 1.8;
+}
+
+
+/* =========================
+   FEATURES
+========================= */
+
+.features-section {
+  padding: 120px 9%;
+}
+
+
+.section-heading {
+  max-width: 620px;
+
+  margin-bottom: 65px;
+}
+
+
+.section-heading h2 {
+  color: var(--plum);
+
+  font-family: "Manrope", sans-serif;
+
+  font-size: 42px;
+  font-weight: 600;
+
+  line-height: 1.25;
+  letter-spacing: -1px;
+}
+
+
+.feature-list {
+  border-top: 1px solid var(--border);
+}
+
+
+.feature-item {
+  display: grid;
+  grid-template-columns: 100px 1fr;
+
+  gap: 25px;
+
+  padding: 37px 0;
+
+  border-bottom: 1px solid var(--border);
+
+  transition: padding 0.25s ease;
+}
+
+
+.feature-item:hover {
+  padding-left: 12px;
+}
+
+
+.feature-number {
+  color: var(--sage);
+
+  font-family: "Manrope", sans-serif;
+
+  font-size: 13px;
+  font-weight: 700;
+}
+
+
+.feature-item h3 {
+  margin: 0 0 10px;
+
+  color: var(--plum);
+
+  font-family: "Manrope", sans-serif;
+
+  font-size: 24px;
+  font-weight: 600;
+}
+
+
+.feature-item p {
+  max-width: 620px;
+
+  margin: 0;
+
+  color: var(--muted-text);
+
+  font-size: 15px;
+  line-height: 1.7;
+}
+
+
+/* =========================
+   APPROACH
+========================= */
+
+.approach-section {
+  padding: 120px 9%;
+
+  background: var(--plum);
+  color: var(--ivory);
+}
+
+
+.light-label {
+  color: #adc3b7;
+}
+
+
+.approach-section > h2 {
+  max-width: 700px;
+
+  margin: 0;
+
+  font-family: "Manrope", sans-serif;
+
+  font-size: clamp(38px, 5vw, 58px);
+  font-weight: 500;
+
+  line-height: 1.2;
+  letter-spacing: -2px;
+}
+
+
+.approach-section > h2 span {
+  color: #a9bdae;
+}
+
+
+.process {
+  display: flex;
+  align-items: flex-start;
+
+  margin-top: 85px;
+}
+
+
+.process-step {
+  flex: 1;
+}
+
+
+.process-step > span {
+  color: #a9bdae;
+
+  font-size: 12px;
+  font-weight: 600;
+}
+
+
+.process-step h3 {
+  margin: 15px 0 12px;
+
+  font-family: "Manrope", sans-serif;
+
+  font-size: 22px;
+  font-weight: 600;
+}
+
+
+.process-step p {
+  max-width: 260px;
+
+  margin: 0;
+
+  color: #c9bdc8;
+
+  font-size: 14px;
+  line-height: 1.7;
+}
+
+
+.process-line {
+  width: 80px;
+  height: 1px;
+
+  margin: 15px 35px 0;
+
+  background: rgba(255, 255, 255, 0.2);
+}
+
+
+/* =========================
+   CTA
+========================= */
+
+.cta-section {
+  padding: 135px 20px;
+
+  background: var(--soft-sage);
+
+  text-align: center;
+}
+
+
+.cta-section h2 {
+  max-width: 720px;
+
+  margin: 0 auto 35px;
+
+  color: var(--plum);
+
+  font-family: "Manrope", sans-serif;
+
+  font-size: clamp(36px, 5vw, 54px);
+  font-weight: 600;
+
+  line-height: 1.25;
+  letter-spacing: -1.5px;
+}
+
+
+/* =========================
+   FOOTER
+========================= */
+
+.footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  padding: 45px 7%;
+
+  background: #2b1c2e;
+  color: white;
+}
+
+
+.footer-brand {
+  display: flex;
+  align-items: center;
+  gap: 13px;
+}
+
+
+.footer-mark {
+  background: var(--ivory);
+  color: var(--plum);
+}
+
+
+.footer-brand strong {
+  font-family: "Manrope", sans-serif;
+}
+
+
+.footer-brand p {
+  margin: 3px 0 0;
+
+  color: #b9afb8;
+
+  font-size: 11px;
+}
+
+
+.copyright {
+  color: #a99da7;
+
+  font-size: 12px;
+}
+
+
+/* =========================
+   RESPONSIVE
+========================= */
+
+@media (max-width: 800px) {
+
+  .navbar {
+    padding: 0 5%;
+  }
+
+  .nav-links {
+    display: none;
+  }
+
+  .faculty-link {
+    display: none;
+  }
+
+  .hero {
+    min-height: 600px;
+
+    padding-top: 80px;
+  }
+
+  .hero h1 {
+    letter-spacing: -2px;
+  }
+
+  .hero-actions {
+    flex-direction: column;
+
+    gap: 20px;
+  }
+
+  .features-section,
+  .approach-section {
+    padding: 90px 7%;
+  }
+
+  .feature-item {
+    grid-template-columns: 45px 1fr;
+  }
+
+  .process {
+    flex-direction: column;
+
+    gap: 45px;
+  }
+
+  .process-line {
+    display: none;
+  }
+
+  .footer {
+    flex-direction: column;
+
+    align-items: flex-start;
+
+    gap: 30px;
+  }
+}
+
+
+@media (max-width: 500px) {
+
+  .navbar {
+    height: 72px;
+  }
+
+  .brand {
+    font-size: 16px;
+  }
+
+  .brand-mark {
+    width: 31px;
+    height: 31px;
+  }
+
+  .student-login {
+    padding: 9px 13px;
+
+    font-size: 12px;
+  }
+
+  .hero {
+    padding-left: 18px;
+    padding-right: 18px;
+  }
+
+  .hero h1 {
+    font-size: 43px;
+  }
+
+  .hero-description {
+    font-size: 16px;
+  }
+
+  .about-section {
+    padding: 90px 22px;
+  }
+
+  .section-heading h2 {
+    font-size: 34px;
+  }
+
+}
