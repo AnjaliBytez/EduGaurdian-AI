@@ -3,8 +3,11 @@ import { useNavigate } from "react-router-dom";
 import "../styles/StudentDashboard.css";
 import axios from "axios";
 
+const API_URL = "https://eduguardian-backend.onrender.com";
+
 function StudentDashboard() {
   const navigate = useNavigate();
+  const student = JSON.parse(localStorage.getItem("student"));
   const [activePage, setActivePage] = useState("Overview");
   const [assessmentStarted, setAssessmentStarted] = useState(false);
 const [currentQuestion, setCurrentQuestion] = useState(0);
@@ -21,20 +24,23 @@ const [studentInterventions, setStudentInterventions] = useState([]);
 
 useEffect(() => {
 
+  if (!student?.studentId) return;
+
   const fetchAcademicData = async () => {
 
     try {
 
       const response = await axios.get(
-        `http://localhost:5000/api/academics/${student.studentId}`
+        `${API_URL}/api/academics/${student.studentId}`
       );
 
       setAcademic(response.data.academic);
-      console.log(response.data.academic);
+
+      console.log("Academic data:", response.data.academic);
 
     } catch (error) {
 
-      console.log(error);
+      console.log("Academic fetch error:", error);
 
     }
 
@@ -42,7 +48,7 @@ useEffect(() => {
 
   fetchAcademicData();
 
-}, []);
+}, [student?.studentId]);
 
 useEffect(() => {
 
@@ -53,7 +59,7 @@ useEffect(() => {
     try {
 
       const response = await axios.get(
-        `http://localhost:5000/api/interventions/${student.studentId}`
+        `${API_URL}/api/interventions/${student.studentId}`
       );
 
       setStudentInterventions(response.data);
@@ -68,13 +74,13 @@ useEffect(() => {
 
   fetchInterventions();
 
-}, []);
+}, [student?.studentId]);
 
 
 
   // Dummy data for frontend development.
   // Later this will come from the backend/database.
-const student = JSON.parse(localStorage.getItem("student"));
+
 
 const studentData = {
   name: student?.name || "Student",
@@ -271,7 +277,7 @@ const submitAssessment = async () => {
   try {
 
     await axios.post(
-      "http://localhost:5000/api/assessments",
+      `${API_URL}/api/assessments`,
       {
         studentId: student.studentId,
         ...assessmentAnswers,
@@ -311,7 +317,7 @@ const handleFeedbackSubmit = async (event) => {
   try {
 
     await axios.post(
-      "http://localhost:5000/api/feedback",
+      `${API_URL}/api/feedback`,
       {
 
         studentId: student.studentId,

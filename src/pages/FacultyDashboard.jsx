@@ -3,6 +3,8 @@ import { useNavigate } from "react-router-dom";
 import "../styles/FacultyDashboard.css";
 import axios from "axios";
 
+const API_URL = "https://eduguardian-backend.onrender.com";
+
 function FacultyDashboard() {
   const navigate = useNavigate();
 
@@ -65,7 +67,7 @@ useEffect(() => {
     try {
 
       const response = await axios.get(
-        "http://localhost:5000/api/students"
+        `${API_URL}/api/students`
       );
 
       const students = response.data;
@@ -78,7 +80,7 @@ useEffect(() => {
           try {
 
             const academicRes = await axios.get(
-              `http://localhost:5000/api/academics/${student.studentId}`
+              `${API_URL}/api/academics/${student.studentId}`
             );
 
             return {
@@ -137,7 +139,7 @@ useEffect(() => {
     try {
 
       const response = await axios.get(
-        "http://localhost:5000/api/analysis"
+        `${API_URL}/api/analysis`
       );
 
       setAttentionStudents(response.data);
@@ -162,7 +164,7 @@ useEffect(() => {
     try {
 
       const response = await axios.get(
-        "http://localhost:5000/api/assessments"
+        `${API_URL}/api/assessments`
       );
 
       setAssessments(response.data);
@@ -186,7 +188,7 @@ useEffect(() => {
     try {
 
       const response = await axios.get(
-        "http://localhost:5000/api/interventions"
+        `${API_URL}/api/interventions`
       );
 
       setInterventions(response.data);
@@ -212,7 +214,7 @@ useEffect(() => {
     try {
 
       const response = await axios.get(
-        "http://localhost:5000/api/feedback"
+        `${API_URL}/api/feedback`
       );
 
       setFeedbacks(response.data);
@@ -455,15 +457,15 @@ const recentActivity = [
       await Promise.all([
 
         axios.get(
-          `http://localhost:5000/api/academics/${student.studentId}`
+          `${API_URL}/api/academics/${student.studentId}`
         ),
 
         axios.get(
-          `http://localhost:5000/api/assessments/${student.studentId}`
+          `${API_URL}/api/assessments/${student.studentId}`
         ),
 
         axios.get(
-          `http://localhost:5000/api/analysis/${student.studentId}`
+          `${API_URL}/api/analysis/${student.studentId}`
         ),
 
       ]);
@@ -575,7 +577,7 @@ selectedStudent?.id,
   try {
 
     await axios.post(
-      "http://localhost:5000/api/interventions",
+      `${API_URL}/api/interventions`,
       {
 
         studentId: selectedStudent.studentId,

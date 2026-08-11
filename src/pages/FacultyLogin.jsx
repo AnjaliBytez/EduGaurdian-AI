@@ -21,7 +21,7 @@ function FacultyLogin() {
 
   try {
     const response = await axios.post(
-      "http://localhost:5000/api/faculty/login",
+     "https://eduguardian-backend.onrender.com/api/faculty/login",
       {
         email,
         password,
