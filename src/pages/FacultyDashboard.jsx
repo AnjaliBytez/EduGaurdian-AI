@@ -26,13 +26,16 @@ function FacultyDashboard() {
   const [showOnDashboard, setShowOnDashboard] = useState(true);
   const [sendEmail, setSendEmail] = useState(true);
   const [reviewNotice, setReviewNotice] = useState("");
+  const [showInterventionSuccess, setShowInterventionSuccess] = useState(false);
   const [supportSearch, setSupportSearch] = useState("");
   const [supportStatusFilter, setSupportStatusFilter] = useState("All Status");
   const [selectedInterventionCase, setSelectedInterventionCase] = useState(null);
   const [allStudents, setAllStudents] = useState([]);
+  const [academicData, setAcademicData] = useState({});
   const [attentionStudents, setAttentionStudents] = useState([]);
   const [interventions, setInterventions] = useState([]);
   const [feedbacks, setFeedbacks] = useState([]);
+  const [assessments, setAssessments] = useState([]);
  
 
   // Temporary faculty data.
@@ -65,7 +68,55 @@ useEffect(() => {
         "http://localhost:5000/api/students"
       );
 
-      setAllStudents(response.data);
+      const students = response.data;
+
+      setAllStudents(students);
+
+      const academicResults = await Promise.all(
+        students.map(async (student) => {
+
+          try {
+
+            const academicRes = await axios.get(
+              `http://localhost:5000/api/academics/${student.studentId}`
+            );
+
+            return {
+              studentId: student.studentId,
+              attendance:
+                academicRes.data.academic.attendance,
+              academicAverage:
+                academicRes.data.academic.academicAverage,
+            };
+
+          } catch (error) {
+
+            console.log(
+              `Academic data not found for ${student.studentId}`,
+              error
+            );
+
+            return {
+              studentId: student.studentId,
+              attendance: null,
+              academicAverage: null,
+            };
+
+          }
+
+        })
+      );
+
+      const academicMap = {};
+
+      academicResults.forEach((item) => {
+        academicMap[item.studentId] = {
+          attendance: item.attendance,
+          academicAverage: item.academicAverage,
+        };
+      });
+
+      setAcademicData(academicMap);
 
     } catch (error) {
 
@@ -101,6 +152,30 @@ useEffect(() => {
   };
 
   fetchAnalysis();
+
+}, []);
+
+useEffect(() => {
+
+  const fetchAssessments = async () => {
+
+    try {
+
+      const response = await axios.get(
+        "http://localhost:5000/api/assessments"
+      );
+
+      setAssessments(response.data);
+
+    } catch (error) {
+
+      console.log(error);
+
+    }
+
+  };
+
+  fetchAssessments();
 
 }, []);
 
@@ -195,7 +270,7 @@ const filteredAttentionStudents = attentionStudents.filter((student) => {
   return matchesSearch && matchesPriority && matchesSignal;
 });
 
-  const filteredStudents = allStudents.filter((student) => {
+ const filteredStudents = allStudents.filter((student) => {
 
   const query = studentSearch.trim().toLowerCase();
 
@@ -204,13 +279,27 @@ const filteredAttentionStudents = attentionStudents.filter((student) => {
     student.name.toLowerCase().includes(query) ||
     student.studentId.toLowerCase().includes(query);
 
-  const matchesYear =
-    yearFilter === "All Years" ||
-    student.year === yearFilter;
+ const matchesYear =
+  yearFilter === "All Years" ||
+  String(student.year) === yearFilter;
+
+  const analysisStatus =
+    attentionStudents.find(
+      (item) => item.studentId === student.studentId
+    )?.overallStatus ?? "Stable";
+
+  const hasActiveSupport =
+    interventions.some(
+      (item) =>
+        item.studentId === student.studentId &&
+        item.status === "Pending"
+    );
 
   const matchesStatus =
     statusFilter === "All Status" ||
-    (student.status ?? "Stable") === statusFilter;
+    (statusFilter === "Active Support"
+      ? hasActiveSupport
+      : analysisStatus === statusFilter);
 
   return (
     matchesSearch &&
@@ -272,10 +361,15 @@ const filteredAttentionStudents = attentionStudents.filter((student) => {
  
 
   const supportMatches = (student, studentId) => {
-    const q = supportSearch.trim().toLowerCase();
-    return !q || student.toLowerCase().includes(q) || studentId.toLowerCase().includes(q);
-  };
+  const q = supportSearch.trim().toLowerCase();
 
+  if (!q) return true;
+
+  const studentName = String(student ?? "").toLowerCase();
+  const id = String(studentId ?? "").toLowerCase();
+
+  return studentName.includes(q) || id.includes(q);
+};
   const filteredInterventions = interventions.filter(item =>
     supportMatches(item.student, item.studentId) &&
     (supportStatusFilter === "All Status" || item.status === supportStatusFilter)
@@ -296,62 +390,63 @@ const filteredAttentionStudents = attentionStudents.filter((student) => {
   return matchesSearch && matchesStatus;
 });
 
-  const filteredOutcomes = feedbacks.filter((item) => {
+ const filteredOutcomes = feedbacks.filter((item) => {
 
   const query = supportSearch.trim().toLowerCase();
 
+  const studentName = String(item.studentName ?? "").toLowerCase();
+  const studentId = String(item.studentId ?? "").toLowerCase();
+
   const matchesSearch =
     !query ||
-    item.studentName.toLowerCase().includes(query) ||
-    item.studentId.toLowerCase().includes(query);
+    studentName.includes(query) ||
+    studentId.includes(query);
 
   const matchesOutcome =
     supportStatusFilter === "All Status" ||
     item.outcome === supportStatusFilter;
 
   return matchesSearch && matchesOutcome;
-
 });
+  const upcomingSessions = interventions
+  .filter(item => item.followUpDate)
+  .sort(
+    (a, b) =>
+      new Date(a.followUpDate) - new Date(b.followUpDate)
+  )
+  .slice(0, 3);
+const recentActivity = [
+  ...attentionStudents.map((student) => ({
+    type: "assessment",
+    title: "Student flagged for attention",
+    description: `${student.studentName} · ${student.overallStatus}`,
+    createdAt: student.createdAt,
+  })),
 
-  const upcomingSessions = [
-    {
-      student: "Aarav Reddy",
-      type: "Mentor check-in",
-      time: "11:30 AM",
-    },
-    {
-      student: "Sneha Rao",
-      type: "Follow-up discussion",
-      time: "2:00 PM",
-    },
-    {
-      student: "Rahul Kumar",
-      type: "Academic support",
-      time: "Tomorrow · 10:00 AM",
-    },
-  ];
-
-  const recentActivity = [
-    {
-      type: "assessment",
-      title: "Wellbeing assessment flagged a student",
-      description: "Sneha Rao · Needs Attention",
-      time: "35 min ago",
-    },
-    {
-      type: "session",
-      title: "Faculty support session completed",
-      description: "Aarav Reddy · Mentor check-in",
-      time: "2 hrs ago",
-    },
-    {
-      type: "intervention",
-      title: "New intervention assigned",
-      description: "Rahul Kumar · Academic support",
-      time: "Yesterday",
-    },
-  ];
-
+  ...interventions.map((intervention) => ({
+    type: "intervention",
+    title: "New intervention assigned",
+    description: `${intervention.studentName} · ${intervention.interventionType}`,
+    createdAt: intervention.createdAt,
+  })),
+]
+  .filter((activity) => activity.createdAt)
+  .sort(
+    (a, b) =>
+      new Date(b.createdAt) - new Date(a.createdAt)
+  )
+  .slice(0, 3)
+  .map((activity) => ({
+    ...activity,
+    time: new Date(activity.createdAt).toLocaleDateString(
+      "en-US",
+      {
+        day: "numeric",
+        month: "short",
+        year: "numeric",
+      }
+    ),
+  }));
  const openStudentReview = async (student) => {
 
   try {
@@ -502,28 +597,14 @@ selectedStudent?.id,
       }
     );
 
-    setShowInterventionModal(false);
-
-    const channels = [];
-
-    if (showOnDashboard) channels.push("Student Dashboard");
-
-    if (sendEmail) channels.push("College Email");
-
-    setReviewNotice(
-      `Intervention created successfully for ${selectedStudent.studentName}${
-        channels.length
-          ? ` · Notification: ${channels.join(" + ")}`
-          : ""
-      }.`
-    );
-
+    
+setShowInterventionModal(false);
+setShowInterventionSuccess(true);
     // Reset Form
 
     setInterventionType("Academic Support");
     setInterventionMessage("");
     setRecommendedAction("");
-    setFollowUpDate("");
     setShowOnDashboard(true);
     setSendEmail(true);
 
@@ -673,15 +754,18 @@ selectedStudent?.id,
               </div>
 
 
-              <div className="overview-date">
-
-                <span>THURSDAY</span>
-
-                <strong>
-                  31 July 2026
-                </strong>
-
-              </div>
+             <div className="overview-date">
+  <span>
+    {new Date().toLocaleDateString("en-US", { weekday: "long" }).toUpperCase()}
+  </span>
+  <strong>
+    {new Date().toLocaleDateString("en-GB", {
+      day: "numeric",
+      month: "long",
+      year: "numeric"
+    })}
+  </strong>
+</div>
 
             </section>
 
@@ -730,94 +814,88 @@ selectedStudent?.id,
 
               {/* Attention */}
 
-              <article className="faculty-stat-card attention">
+              {/* Attention */}
 
-                <div className="stat-card-heading">
+<article className="faculty-stat-card attention">
 
-                  <span>
-                    NEED ATTENTION
-                  </span>
+  <div className="stat-card-heading">
 
-                  <span className="stat-symbol">
-                    !
-                  </span>
+    <span>
+      NEED ATTENTION
+    </span>
 
-                </div>
+    <span className="stat-symbol">
+      !
+    </span>
 
-                <strong className="faculty-stat-number">
-  {
-    allStudents.filter(
-      student =>
-        student.assessment &&
-        student.assessment !== "Stable"
-    ).length
-  }
-</strong>
+  </div>
 
-                <p>
-                  <strong>
-  {
-    allStudents.filter(
-      student => student.status === "High Priority"
-    ).length
-  }
-</strong>{" "}
-                  high priority
-                </p>
+  <strong className="faculty-stat-number">
+    {attentionSummary.highPriority + attentionSummary.needsAttention}
+  </strong>
 
-                <button
-                  onClick={() => {
-                    setActiveModule("Students");
-                    setActiveSubPage("Attention Required");
-                  }}
-                >
-                  Review students →
-                </button>
+  <p>
+    <strong>
+      {attentionSummary.highPriority}
+    </strong>{" "}
+    high priority
+  </p>
 
-              </article>
+  <button
+    onClick={() => {
+      setActiveModule("Students");
+      setActiveSubPage("Attention Required");
+    }}
+  >
+    Review students →
+  </button>
+
+</article>
 
 
               {/* Active Support */}
 
-              <article className="faculty-stat-card support">
+            {/* Active Support */}
 
-                <div className="stat-card-heading">
+<article className="faculty-stat-card support">
 
-                  <span>
-                    ACTIVE SUPPORT
-                  </span>
+  <div className="stat-card-heading">
 
-                  <span className="stat-symbol">
-                    ◇
-                  </span>
+    <span>
+      ACTIVE SUPPORT
+    </span>
 
-                </div>
+    <span className="stat-symbol">
+      ◇
+    </span>
 
-                <strong className="faculty-stat-number">
-  {
-    allStudents.filter(
-      student => student.status === "Active Support"
-    ).length
-  }
-</strong>
+  </div>
 
-                <p>
-                  <strong>
-                   0
-                  </strong>{" "}
-                  currently improving
-                </p>
+  <strong className="faculty-stat-number">
+    {interventions.filter(
+      intervention => intervention.status === "Pending"
+    ).length}
+  </strong>
 
-                <button
-                  onClick={() => {
-                    setActiveModule("Support");
-                    setActiveSubPage("Interventions");
-                  }}
-                >
-                  View support →
-                </button>
+  <p>
+    <strong>
+      {interventions.filter(
+        intervention => intervention.status === "Pending"
+      ).length}
+    </strong>{" "}
+    active support plans
+  </p>
 
-              </article>
+  <button
+    onClick={() => {
+      setActiveModule("Support");
+      setActiveSubPage("Interventions");
+    }}
+  >
+    View support →
+  </button>
+
+</article>
 
             </section>
 
@@ -866,108 +944,77 @@ selectedStudent?.id,
                 <table className="faculty-attention-table">
 
                   <thead>
+  <tr>
+    <th>STUDENT</th>
+    <th>SOURCE</th>
+    <th>REASON</th>
+    <th>PRIORITY</th>
+    <th></th>
+  </tr>
+</thead>
 
-                    <tr>
-                      <th>STUDENT</th>
-                      <th>SOURCE</th>
-                      <th>REASON</th>
-                      <th>PRIORITY</th>
-                      <th>UPDATED</th>
-                      <th></th>
-                    </tr>
+<tbody>
+  {filteredAttentionStudents.map((student) => (
+    <tr key={student.studentId}>
 
-                  </thead>
+      <td>
+        <div className="faculty-student-cell">
 
+          <div className="table-avatar">
+            {student.studentName
+              ?.split(" ")
+              .map(word => word[0])
+              .join("")
+              .toUpperCase()}
+          </div>
 
-                  <tbody>
+          <div>
+            <strong>
+              {student.studentName}
+            </strong>
+          </div>
 
-                    {filteredAttentionStudents.map((student) => (
+        </div>
+      </td>
 
-                      <tr key={student.studentId}>
+      <td>
+        <span
+          className={`source-badge ${
+            student.source === "Academic Signals"
+              ? "academic"
+              : student.source === "Assessment"
+              ? "assessment"
+              : "both"
+          }`}
+        >
+          {student.source}
+        </span>
+      </td>
 
-                        <td>
+      <td>
+        <span>
+          {student.reasons?.[0] || "No reason available"}
+        </span>
+      </td>
 
-                          <div className="faculty-student-cell">
+      <td>
+        <span
+          className={
+            student.overallStatus === "High Priority"
+              ? "priority-badge high"
+              : "priority-badge attention"
+          }
+        >
+          {student.overallStatus}
+        </span>
+      </td>
 
-                            <div className="table-avatar">
-                              {student.studentName
-  ?.split(" ")
-  .map(word => word[0])
-  .join("")
-  .toUpperCase()}
-                            </div>
+      <td>
+      </td>
 
-                            <div>
-
-                              <strong>
-                                {student.studentName}
-                              </strong>
-
-                              <span>
-                                {student.reasons?.[0] || "No reason available"}
-                              </span>
-
-                            </div>
-
-                          </div>
-
-                        </td>
-
-
-                        <td>
-
-                          <span
-                            className={`source-badge ${
-                              student.source === "Academic Signals"
-                                ? "academic"
-                                : student.source === "Assessment"
-                                ? "assessment"
-                                : "both"
-                            }`}
-                          >
-                            {student.source}
-                          </span>
-
-                        </td>
-
-
-                        <td>
-
-                          <span
-                            className={
-                              student.overallStatus === "High Priority"
-                                ? "priority-badge high"
-                                : "priority-badge attention"
-                            }
-                          >
-                            {student.overallStatus}
-                          </span>
-
-                        </td>
-
-
-                        <td className="updated-cell">
-                          {new Date(student.createdAt).toLocaleDateString()}
-                        </td>
-
-
-                        <td>
-
-                          <button
-                            className="review-student-button"
-                            onClick={() => openStudentReview(student)}
-                          >
-                            Review →
-                          </button>
-
-                        </td>
-
-                      </tr>
-
-                    ))}
-
-                  </tbody>
-
+    </tr>
+  ))}
+</tbody>
                 </table>
 
               </div>
@@ -1012,48 +1059,81 @@ selectedStudent?.id,
                 </div>
 
 
-                <div className="followup-summary">
+               <div className="followup-summary">
 
-                  <strong>3</strong>
+  <strong>
+    {
+      upcomingSessions.filter(item => {
+        const today = new Date();
+        const followUp = new Date(item.followUpDate);
 
-                  <div>
-                    <span>sessions today</span>
-                    <p>5 scheduled this week</p>
-                  </div>
+        return (
+          followUp.getFullYear() === today.getFullYear() &&
+          followUp.getMonth() === today.getMonth() &&
+          followUp.getDate() === today.getDate()
+        );
+      }).length
+    }
+  </strong>
 
-                </div>
+  <div>
+    <span>sessions today</span>
+
+    <p>
+      {
+        interventions.filter(item => {
+          if (!item.followUpDate) return false;
+
+          const today = new Date();
+          const followUp = new Date(item.followUpDate);
+
+          const weekFromNow = new Date();
+          weekFromNow.setDate(today.getDate() + 7);
+
+          return followUp >= today && followUp <= weekFromNow;
+        }).length
+      }{" "}
+      scheduled this week
+    </p>
+  </div>
+
+</div>
 
 
                 <div className="overview-session-list">
 
-                  {upcomingSessions.map(
-                    (session, index) => (
+                 {upcomingSessions.map((session) => (
 
-                      <div
-                        className="overview-session"
-                        key={index}
-                      >
+  <div
+    className="overview-session"
+    key={session._id}
+  >
 
-                        <div>
+    <div>
 
-                          <strong>
-                            {session.student}
-                          </strong>
+      <strong>
+        {session.studentName}
+      </strong>
 
-                          <span>
-                            {session.type}
-                          </span>
+      <span>
+        {session.interventionType}
+      </span>
 
-                        </div>
+    </div>
 
-                        <span className="session-time">
-                          {session.time}
-                        </span>
+    <span className="session-time">
+      {new Date(session.followUpDate).toLocaleDateString(
+        "en-US",
+        {
+          month: "short",
+          day: "numeric",
+        }
+      )}
+    </span>
 
-                      </div>
+  </div>
 
-                    )
-                  )}
+))}
 
                 </div>
 
@@ -1257,15 +1337,18 @@ selectedStudent?.id,
 
                 <div className="student-filter-group">
                   <label className="student-filter">
-                    <span>YEAR</span>
-                    <select value={yearFilter} onChange={(event) => setYearFilter(event.target.value)}>
-                      <option>All Years</option>
-                      <option>1st Year</option>
-                      <option>2nd Year</option>
-                      <option>3rd Year</option>
-                      <option>4th Year</option>
-                    </select>
-                  </label>
+  <span>YEAR</span>
+  <select
+    value={yearFilter}
+    onChange={(event) => setYearFilter(event.target.value)}
+  >
+    <option value="All Years">All Years</option>
+    <option value="1">1st Year</option>
+    <option value="2">2nd Year</option>
+    <option value="3">3rd Year</option>
+    <option value="4">4th Year</option>
+  </select>
+</label>
 
                   <label className="student-filter">
                     <span>STATUS</span>
@@ -1306,7 +1389,6 @@ selectedStudent?.id,
                       <th>ACADEMIC AVG.</th>
                       <th>ASSESSMENT</th>
                       <th>STATUS</th>
-                      <th></th>
                     </tr>
                   </thead>
 
@@ -1331,11 +1413,13 @@ selectedStudent?.id,
 
                         <td>
                           <div className="metric-cell">
-                            <strong>{selectedStudent?.attendance ?? 82}%</strong>
+                        <strong>
+  {academicData[student.studentId]?.attendance ?? "-"}%
+</strong>
                             <div className="mini-progress">
-                             <span
+                       <span
   style={{
-    width: `${student.attendance ?? 82}%`,
+    width: `${academicData[student.studentId]?.attendance ?? 0}%`,
   }}
 ></span>
                             </div>
@@ -1344,49 +1428,71 @@ selectedStudent?.id,
 
                         <td>
                           <div className="metric-cell">
-                         <strong>{student.academicAverage ?? 76}%</strong>
+                       <strong>
+  {academicData[student.studentId]?.academicAverage ?? "-"}%
+</strong>
                             <div className="mini-progress academic">
-                              <span style={{ width: `${student.academicAverage}%` }}></span>
+<span
+  style={{
+    width: `${academicData[student.studentId]?.academicAverage ?? 0}%`,
+  }}
+></span>
                             </div>
                           </div>
                         </td>
 
                         <td>
-                          <span className={`assessment-status ${
-  (student.assessment ?? "Pending") === "Stable"
-    ? "stable"
-    : (student.assessment ?? "Pending") === "Needs Attention"
-    ? "attention"
-    : "pending"
-}`}  >
-                            {student.assessment ?? "Pending"}
-                        
-                          </span>
-                        </td>
+  <span
+    className={`assessment-status ${
+      assessments.some(
+        item => item.studentId === student.studentId
+      )
+        ? "stable"
+        : "pending"
+    }`}
+  >
+    {
+      assessments.some(
+        item => item.studentId === student.studentId
+      )
+        ? "Completed"
+        : "Pending"
+    }
+  </span>
+</td>
 
                         <td>
-                          <span className={`student-status ${
-                            (student.status ?? "Stable") === "Stable"
-                              ? "stable"
-                              : (student.status ?? "Stable") === "High Priority"
-                              ? "high"
-                              : (student.status ?? "Stable") === "Active Support"
-                              ? "support"
-                              : "attention"
-                          }`}>
-                            {(student.status ?? "Stable")}
-                          </span>
-                        </td>
+  <span
+    className={`student-status ${
+      (attentionStudents.find(
+        item => item.studentId === student.studentId
+      )?.overallStatus ?? "Stable") === "Stable"
+        ? "stable"
+        : (attentionStudents.find(
+            item => item.studentId === student.studentId
+          )?.overallStatus ?? "Stable") === "High Priority"
+        ? "high"
+        : (attentionStudents.find(
+            item => item.studentId === student.studentId
+          )?.overallStatus ?? "Stable") === "Active Support"
+        ? "support"
+        : "attention"
+    }`}
+  >
+    {
+      attentionStudents.find(
+        item => item.studentId === student.studentId
+      )?.overallStatus ?? "Stable"
+    }
+  </span>
+</td>
 
-                        <td>
-                          <button className="view-student-button">View →</button>
-                        </td>
                       </tr>
                     ))}
 
                     {filteredStudents.length === 0 && (
                       <tr>
-                        <td colSpan="7" className="student-empty-state">
+                        <td colSpan="6" className="student-empty-state">
                           No students match the selected filters.
                         </td>
                       </tr>
@@ -1680,26 +1786,21 @@ selectedStudent?.id,
 
             <section className="review-student-header">
 
-              <div className="review-student-identity">
+             <div className="review-student-identity">
 
-                <div className="review-large-avatar">
-                  {selectedStudent?.initials}
-                </div>
+  <div>
+    <p className="faculty-eyebrow">
+      STUDENT REVIEW
+    </p>
 
-                <div>
-                  <p className="faculty-eyebrow">
-                    STUDENT REVIEW
-                  </p>
+    <h1>{selectedStudent?.studentName}</h1>
 
-                  <h1>{selectedStudent?.name}</h1>
+    <p>
+      {selectedStudent?.studentId}
+    </p>
+  </div>
 
-                  <p>
-                    {selectedStudent?.id} · {selectedStudent?.detail}
-                  </p>
-                </div>
-
-              </div>
-
+</div>
 
               <span
                 className={`review-priority ${
@@ -1721,38 +1822,6 @@ selectedStudent?.id,
                 {reviewNotice}
               </div>
             )}
-
-
-            <section className="review-flag-panel">
-
-              <div>
-                <p className="faculty-section-label">
-                  WHY THIS STUDENT WAS FLAGGED
-                </p>
-
-                <h2>{selectedStudent?.reason}</h2>
-
-                <p>
-                  These signals are intended to support faculty
-                  review. Final support decisions remain with the
-                  faculty member.
-                </p>
-              </div>
-
-              <span
-                className={`source-badge ${
-                  selectedStudent?.source === "Academic Signals"
-                    ? "academic"
-                    : selectedStudent?.source === "Assessment"
-                    ? "assessment"
-                    : "both"
-                }`}
-              >
-                {selectedStudent?.source}
-              </span>
-
-            </section>
-
 
             <div className="review-insight-grid">
 
@@ -1889,39 +1958,73 @@ selectedStudent?.id,
                 </div>
               </div>
 
+{interventions.filter(
+  (intervention) =>
+    intervention.studentId === selectedStudent?.studentId
+).length > 0 ? (
 
-              {selectedStudent?.priority === "Active Support" ? (
+  interventions
+    .filter(
+      (intervention) =>
+        intervention.studentId === selectedStudent?.studentId
+    )
+    .map((intervention) => (
 
-                <div className="support-history-item">
-                  <div className="support-history-marker">✓</div>
+      <div
+        className="support-history-item"
+        key={intervention._id}
+      >
 
-                  <div>
-                    <strong>Faculty support session</strong>
-                    <p>
-                      Student currently has an active support
-                      intervention and follow-up.
-                    </p>
-                  </div>
+        <div className="support-history-marker">
+          ✓
+        </div>
 
-                  <span>Active</span>
-                </div>
+        <div>
+          <strong>
+            {intervention.interventionType}
+          </strong>
 
-              ) : (
+          <p>
+            {intervention.message}
+          </p>
 
-                <div className="review-empty-history">
-                  <span>◇</span>
+          <small>
+            Follow-up:{" "}
+            {intervention.followUpDate
+              ? new Date(
+                  intervention.followUpDate
+                ).toLocaleDateString()
+              : "Not scheduled"}
+          </small>
+        </div>
 
-                  <div>
-                    <strong>No previous intervention recorded</strong>
-                    <p>
-                      If support is required, create an intervention
-                      after completing your review.
-                    </p>
-                  </div>
-                </div>
+        <span>
+          {intervention.status}
+        </span>
 
-              )}
+      </div>
 
+    ))
+
+) : (
+
+  <div className="review-empty-history">
+
+    <span>◇</span>
+
+    <div>
+      <strong>No previous intervention recorded</strong>
+
+      <p>
+        If support is required, create an intervention
+        after completing your review.
+      </p>
+    </div>
+
+  </div>
+
+)}
+              
             </section>
 
 
@@ -2237,6 +2340,46 @@ selectedStudent?.id,
 
         )}
 
+        {showInterventionSuccess && (
+  <div className="intervention-success-backdrop">
+
+    <div className="intervention-success-modal">
+
+      <div className="intervention-success-icon">
+        ✓
+      </div>
+
+      <p className="faculty-eyebrow">
+        SUPPORT UPDATE
+      </p>
+
+      <h2>Intervention Scheduled</h2>
+
+      <p>
+        The intervention for{" "}
+        <strong>{selectedStudent?.studentName}</strong>{" "}
+        has been successfully scheduled.
+      </p>
+
+      {followUpDate && (
+        <span className="intervention-success-date">
+          Follow-up:{" "}
+          {new Date(followUpDate).toLocaleDateString()}
+        </span>
+      )}
+
+      <button
+        className="intervention-success-button"
+        onClick={() => setShowInterventionSuccess(false)}
+      >
+        Done
+      </button>
+
+    </div>
+
+  </div>
+)}
+
 
         {/* =====================================
             SUPPORT MODULES
@@ -2309,17 +2452,7 @@ selectedStudent?.id,
                       />
                     </div>
 
-                    <label className="support-filter">
-                      <span>CURRENT STATE</span>
-                      <select
-                        value={supportStatusFilter}
-                        onChange={e => setSupportStatusFilter(e.target.value)}
-                      >
-                        <option>All Status</option>
-                        <option>Pending</option>
-                        <option>Completed</option>
-                      </select>
-                    </label>
+                    
                   </div>
 
                   <div className="support-results">
@@ -2342,7 +2475,6 @@ selectedStudent?.id,
                           <th>INTERVENTION</th>
                           <th>SESSIONS</th>
                           <th>LAST SESSION</th>
-                          <th>CURRENT STATE</th>
                           <th></th>
                         </tr>
                       </thead>
@@ -2352,7 +2484,6 @@ selectedStudent?.id,
                           <tr key={intervention._id}>
                             <td>
                               <div className="support-student">
-                                <div className="support-avatar">{intervention.initials}</div>
                                 <div>
                                   <strong>{intervention.studentName}</strong>
                                   <span>{intervention.studentId} · {intervention.id}</span>
@@ -2373,15 +2504,7 @@ selectedStudent?.id,
 
                             <td className="support-muted">{new Date(intervention.createdAt).toLocaleDateString()}</td>
 
-                            <td>
-                              <span
-                                className={`support-status ${
-                                  intervention.status === "Completed" ? "completed" : "active"
-                                }`}
-                              >
-                                {intervention.status}
-                              </span>
-                            </td>
+                      
 
                             <td>
                               <button
@@ -2428,11 +2551,6 @@ selectedStudent?.id,
         )}
       </div>
 
-      <span className="focus-status">
-        {interventions.length > 0
-          ? interventions[0].status
-          : "Pending"}
-      </span>
     </section>
 
     <section className="support-workspace">
@@ -2450,20 +2568,6 @@ selectedStudent?.id,
 
         </div>
 
-        <label className="support-filter">
-
-          <span>STATUS</span>
-
-          <select
-            value={supportStatusFilter}
-            onChange={e => setSupportStatusFilter(e.target.value)}
-          >
-            <option>All Status</option>
-            <option>Pending</option>
-            <option>Completed</option>
-          </select>
-
-        </label>
 
       </div>
 
@@ -2476,7 +2580,6 @@ selectedStudent?.id,
         <button
           onClick={() => {
             setSupportSearch("");
-            setSupportStatusFilter("All Status");
           }}
         >
           Clear filters
@@ -2546,24 +2649,6 @@ selectedStudent?.id,
 
             </div>
 
-            <span
-              className={`support-status ${
-                item.status === "Completed"
-                  ? "completed"
-                  : item.status === "Pending"
-                  ? "due"
-                  : "active"
-              }`}
-            >
-              {item.status}
-            </span>
-
-            <button className="followup-action-button">
-              {item.status === "Completed"
-                ? "View →"
-                : "Complete Follow-up →"}
-            </button>
-
           </article>
 
         ))}
@@ -2606,101 +2691,84 @@ selectedStudent?.id,
 
 </section>
 
-                <section className="support-workspace">
-                  <div className="support-toolbar">
-                    <div className="support-search"><span>⌕</span><input value={supportSearch} onChange={e => setSupportSearch(e.target.value)} placeholder="Search outcome records" /></div>
-                    <label className="support-filter"><span>OUTCOME</span><select value={supportStatusFilter} onChange={e => setSupportStatusFilter(e.target.value)}><option>All Status</option><option>Yes</option>
-<option>No</option></select></label>
-                  </div>
-                  <div className="support-results"><span>Showing {filteredOutcomes.length} outcome records</span><button onClick={() => {setSupportSearch(""); setSupportStatusFilter("All Status");}}>Clear filters</button></div>
-                  <div className="outcome-cards">
-                    {filteredOutcomes.map((item) => (
+               <section className="support-workspace">
+  <div className="support-toolbar">
+    <div className="support-search">
+      <span>⌕</span>
+      <input
+        value={supportSearch}
+        onChange={e => setSupportSearch(e.target.value)}
+        placeholder="Search outcome records"
+      />
+    </div>
+  </div>
 
-  <article
-    className="outcome-card"
-    key={item._id}
-  >
+  <div className="support-results">
+    <span>
+      Showing {filteredOutcomes.length} outcome records
+    </span>
 
-    <div className="outcome-card-top">
+    <button onClick={() => setSupportSearch("")}>
+      Clear filters
+    </button>
+  </div>
 
-      <div className="support-student">
+  <div className="outcome-cards">
+    {filteredOutcomes.map((item) => (
 
-        <div className="support-avatar">
+      <article
+        className="outcome-card"
+        key={item._id}
+      >
 
-          {item.studentName
-            ?.split(" ")
-            .map(word => word[0])
-            .join("")
-            .toUpperCase()}
+        <div className="outcome-card-top">
 
-        </div>
+          <div className="support-student">
+            <div>
+              <strong>{item.studentName}</strong>
+              <span>{item.studentId}</span>
+            </div>
+          </div>
 
-        <div>
-
-          <strong>{item.studentName}</strong>
-
-          <span>
-            {item.studentId}
+          <span
+            className={`outcome-badge ${
+              item.needsAnotherSession === "Yes"
+                ? "monitoring"
+                : "improved"
+            }`}
+          >
+            {item.needsAnotherSession === "Yes"
+              ? "Needs Another Session"
+              : "Completed"}
           </span>
 
         </div>
 
-      </div>
+        <div className="outcome-change">
 
-      <span
-        className={`outcome-badge ${
-          item.needsAnotherSession === "Yes"
-            ? "monitoring"
-            : "improved"
-        }`}
-      >
-        {item.needsAnotherSession === "Yes"
-          ? "Needs Another Session"
-          : "Completed"}
-      </span>
+          <div>
+            <span>RATING</span>
+            <strong>{item.rating}</strong>
+          </div>
 
-    </div>
+          <span className="outcome-arrow">→</span>
 
-    <div className="outcome-change">
+          <div>
+            <span>STUDENT COMMENT</span>
+            <strong>{item.comment}</strong>
+          </div>
 
-      <div>
+        </div>
 
-        <span>RATING</span>
+        <div className="outcome-card-footer">
+          <span>Reviewed</span>
+        </div>
 
-        <strong>{item.rating}</strong>
+      </article>
 
-      </div>
-
-      <span className="outcome-arrow">→</span>
-
-      <div>
-
-        <span>STUDENT COMMENT</span>
-
-        <strong>{item.comment}</strong>
-
-      </div>
-
-    </div>
-
-    <div className="outcome-card-footer">
-
-      <span>
-        Reviewed{" "}
-        {new Date(item.createdAt).toLocaleDateString()}
-      </span>
-
-      <button>
-        View Outcome →
-      </button>
-
-    </div>
-
-  </article>
-
-))}
+    ))}
   </div>
-                </section>
+</section>
               </>
             )}
 
